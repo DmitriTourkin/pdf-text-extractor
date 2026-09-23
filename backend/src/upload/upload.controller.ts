@@ -16,13 +16,6 @@ export class UploadController {
   @UseInterceptors(FileInterceptor('file'))
   
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    const key = await this.uploadService.uploadFile(file);
-
-    return {
-      originalName: file.originalname,
-      size: file.size,
-      mimeType: file.mimetype,
-      s3Key: key,
-    };
+    return this.uploadService.uploadFile(file);
   }
 }
