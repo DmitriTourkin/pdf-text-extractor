@@ -19,6 +19,8 @@ npm-debug.log*
 
 # learning notes (personal, not part of the project)
 w.md
+npmtxt.md
+data_model.md
 
 # editor
 .vscode/*
