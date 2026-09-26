@@ -6,6 +6,8 @@ import { Repository } from 'typeorm';
 import { FileEntity, FileStatus } from './file.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/auth/user.entity';
+import { PageEntity } from 'src/pdf/page.entity';
+import { PdfService } from 'src/pdf/pdf.service';
 
 @Injectable()
 export class UploadService {
@@ -14,9 +16,11 @@ export class UploadService {
 
   constructor(
     private readonly configService: ConfigService,
-
+    private readonly pdfService: PdfService,
     @InjectRepository(FileEntity)
     private readonly filesRepository: Repository<FileEntity>,
+    @InjectRepository(PageEntity)
+    private readonly pagesRepository: Repository<PageEntity>,
   ) {
     this.bucket = this.configService.getOrThrow<string>('MINIO_BUCKET');
 
@@ -44,8 +48,10 @@ export class UploadService {
       }),
     );
 
+    let fileRecord: FileEntity;
+
     try {
-      const fileRecord = this.filesRepository.create({
+      fileRecord = this.filesRepository.create({
         originalName: file.originalname,
         s3Key: key,
         size: file.size,
@@ -53,8 +59,7 @@ export class UploadService {
         status: FileStatus.DONE,
         user: { id: userId } as UserEntity
       });
-
-      return await this.filesRepository.save(fileRecord);
+      fileRecord = await this.filesRepository.save(fileRecord);
     } catch (e) {
       await this.s3.send(
         new DeleteObjectCommand({
@@ -64,5 +69,22 @@ export class UploadService {
       );
       throw e;
     }
+
+    try {
+      const pageTexts = await this.pdfService.extractPages(file.buffer);
+      
+      const pages = pageTexts.map((txt, idx) => {
+        return this.pagesRepository.create({
+          pageNumber: idx + 1,
+          textContent: txt,
+          file: fileRecord
+        })
+      });
+      await this.pagesRepository.save(pages);
+      fileRecord.status = FileStatus.DONE;
+    } catch (e) {
+      fileRecord.status = FileStatus.ERROR;
+    }
+    return this.filesRepository.save(fileRecord);
   }
 }
