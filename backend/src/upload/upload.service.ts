@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
 import { FileEntity, FileStatus } from './file.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UserEntity } from 'src/auth/user.entity';
 
 @Injectable()
 export class UploadService {
@@ -31,7 +32,7 @@ export class UploadService {
     });
   }
 
-  async uploadFile(file: Express.Multer.File) {
+  async uploadFile(file: Express.Multer.File, userId: string): Promise<FileEntity> {
     const key = `${randomUUID()}-${file.originalname}`;
 
     await this.s3.send(
@@ -50,6 +51,7 @@ export class UploadService {
         size: file.size,
         mimeType: file.mimetype,
         status: FileStatus.DONE,
+        user: { id: userId } as UserEntity
       });
 
       return await this.filesRepository.save(fileRecord);
