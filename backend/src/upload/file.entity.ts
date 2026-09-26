@@ -1,8 +1,11 @@
+import { UserEntity } from 'src/auth/user.entity';
+
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  ManyToOne
 } from 'typeorm'
 
 export enum FileStatus {
@@ -38,4 +41,7 @@ export class FileEntity {
 
   @CreateDateColumn()
   uploadedAt: Date;
+
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE'})
+  user: UserEntity
 }
