@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from 'src/auth/user.entity';
 import { PageEntity } from 'src/pdf/page.entity';
 import { PdfService } from 'src/pdf/pdf.service';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 
 @Injectable()
 export class UploadService {
@@ -17,6 +18,7 @@ export class UploadService {
   constructor(
     private readonly configService: ConfigService,
     private readonly pdfService: PdfService,
+    private readonly notificationGateway: NotificationsGateway,
     @InjectRepository(FileEntity)
     private readonly filesRepository: Repository<FileEntity>,
     @InjectRepository(PageEntity)
@@ -85,6 +87,13 @@ export class UploadService {
     } catch (e) {
       fileRecord.status = FileStatus.ERROR;
     }
-    return this.filesRepository.save(fileRecord);
+    const savedFile = await this.filesRepository.save(fileRecord);
+
+    this.notificationGateway.notifyFileProcessed(userId, {
+      fileId: savedFile.id,
+      status: savedFile.status,
+    });
+
+    return savedFile;
   }
 }
