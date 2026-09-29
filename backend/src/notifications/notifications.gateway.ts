@@ -2,7 +2,7 @@ import {
   WebSocketGateway,
   WebSocketServer,
   OnGatewayConnection,
-  OnGatewayDisconnect
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 
 import { Server, Socket } from 'socket.io';
@@ -10,8 +10,10 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { parse } from 'cookie';
 
-@WebSocketGateway({ cors: { origin: '*'}})
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+@WebSocketGateway({ cors: { origin: '*' } })
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -30,8 +32,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     }
 
     try {
-      const payload = this.jwtService.verify<{ sub: string, email: string }>(token);
-      client.join(`user:${payload.sub}`);
+      const payload = this.jwtService.verify<{ sub: string; email: string }>(
+        token,
+      );
+      client.join(this.getUserRoom(payload.sub));
       this.logger.log(`Клиент ${client.id} авторизован как ${payload.email}`);
     } catch {
       this.logger.warn(`Невалидный токен, отключаю: ${client.id}`);
@@ -43,7 +47,14 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     this.logger.log(`Клиент отключился: ${client.id}`);
   }
 
-  notifyFileProcessed(userId: string, payload: { fileId: string; status: string}) {
-    this.server.to(`user: ${userId}`).emit('file:processed', payload);
+  private getUserRoom(userId: string): string {
+    return `user:${userId}`;
+  }
+
+  notifyFileProcessed(
+    userId: string,
+    payload: { fileId: string; status: string },
+  ) {
+    this.server.to(this.getUserRoom(userId)).emit('file:processed', payload);
   }
 }
