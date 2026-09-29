@@ -7,6 +7,8 @@ import {
 
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { parse } from 'cookie';
 
 @WebSocketGateway({ cors: { origin: '*'}})
 export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -15,11 +17,33 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   private readonly logger = new Logger(NotificationsGateway.name);
 
+  constructor(private readonly jwtService: JwtService) {}
+
   handleConnection(client: Socket, ...args: any[]) {
-    this.logger.log(`Клиент подключился: ${client.id}`);
+    const cookies = parse(client.handshake.headers.cookie ?? '');
+    const token = cookies.accessToken;
+
+    if (!token) {
+      this.logger.log(`Подключение без токена отклонено: ${client.id}`);
+      client.disconnect();
+      return;
+    }
+
+    try {
+      const payload = this.jwtService.verify<{ sub: string, email: string }>(token);
+      client.join(`user:${payload.sub}`);
+      this.logger.log(`Клиент ${client.id} авторизован как ${payload.email}`);
+    } catch {
+      this.logger.warn(`Невалидный токен, отключаю: ${client.id}`);
+      client.disconnect();
+    }
   }
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Клиент отключился: ${client.id}`);
+  }
+
+  notifyFileProcessed(userId: string, payload: { fileId: string; status: string}) {
+    this.server.to(`user: ${userId}`).emit('file:processed', payload);
   }
 }
