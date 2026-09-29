@@ -6,7 +6,7 @@ import { AppService } from './app.service';
 import { UploadModule } from './upload/upload.module';
 import { AuthModule } from './auth/auth.module';
 import { PdfModule } from './pdf/pdf.module';
-import { PdfService } from './pdf/pdf.service';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -27,8 +27,9 @@ import { PdfService } from './pdf/pdf.service';
     UploadModule,
     AuthModule,
     PdfModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService, PdfService],
+  providers: [AppService],
 })
 export class AppModule {}
