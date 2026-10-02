@@ -9,8 +9,9 @@ import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { parse } from 'cookie';
+import { FRONTEND_ORIGIN } from 'src/common/constants';
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({ cors: { origin: FRONTEND_ORIGIN, credentials: true }, })
 export class NotificationsGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
