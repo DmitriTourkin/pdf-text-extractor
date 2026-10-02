@@ -1,0 +1,1 @@
+export const FRONTEND_ORIGIN = 'http://localhost:5173';
