@@ -1,1 +1,1 @@
-export type { FileDto, FileStatus } from '../model/types';
+export type { FileDto, FileStatus } from './model/types';
